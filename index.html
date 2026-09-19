@@ -141,11 +141,21 @@
         </div>
       </div>
 
-      <!-- 排行榜視圖 -->
+      <!-- 排行榜與籌碼雷達視圖 -->
       <div class="ranking-container" id="ranking-view">
         <div class="ranking-table-card">
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--s4);">
-            <div style="font-size:15px; font-weight:700;">板塊資金流排行榜</div>
+          <!-- 籌碼雷達榜單切換 -->
+          <div class="radar-nav-bar" id="radar-nav-tabs">
+            <button class="radar-nav-btn active" data-tab="sectors" type="button">📁 板塊資金榜</button>
+            <button class="radar-nav-btn" data-tab="co_buy" type="button">🎯 土洋同買榜</button>
+            <button class="radar-nav-btn" data-tab="co_sell" type="button">❄️ 土洋同賣榜</button>
+            <button class="radar-nav-btn" data-tab="divergence" type="button">⚡ 土洋對作榜</button>
+            <button class="radar-nav-btn" data-tab="foreign_streak_top" type="button">🔥 外資連買榜</button>
+            <button class="radar-nav-btn" data-tab="trust_streak_top" type="button">💎 投信連買榜</button>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--s4);" id="rank-header-bar">
+            <div style="font-size:15px; font-weight:700;" id="rank-title">板塊資金流排行榜</div>
             <div class="view-toggle" id="rank-sort-tabs">
               <button class="view-btn active" data-sort="net_5d_yi" type="button">近 5 日</button>
               <button class="view-btn" data-sort="net_1d_yi" type="button">當日</button>
@@ -193,6 +203,21 @@
       <div class="drawer-metric">
         <span class="label">近 20 日買超</span>
         <span class="val" id="dm-20d">--</span>
+      </div>
+    </div>
+    <!-- 法人分項指標 -->
+    <div class="drawer-metrics-grid" style="grid-template-columns: repeat(3, 1fr); background: var(--s2); border-bottom: 1px solid var(--s4); padding: 8px 16px;">
+      <div class="drawer-metric">
+        <span class="label" style="color:#64B5F6;">外資 5 日</span>
+        <span class="val" id="dm-foreign" style="font-size:13px;">--</span>
+      </div>
+      <div class="drawer-metric">
+        <span class="label" style="color:#BA68C8;">投信 5 日</span>
+        <span class="val" id="dm-trust" style="font-size:13px;">--</span>
+      </div>
+      <div class="drawer-metric">
+        <span class="label" style="color:#FFB74D;">自營 5 日</span>
+        <span class="val" id="dm-dealer" style="font-size:13px;">--</span>
       </div>
     </div>
 

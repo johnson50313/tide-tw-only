@@ -1135,6 +1135,109 @@ html, body {
   color: var(--c-gold);
 }
 
+/* 法人三大分項 Mini Chips */
+.insti-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip-insti {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--s3);
+  border: 1px solid var(--s5);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.chip-insti.foreign { color: #64B5F6; }
+.chip-insti.trust { color: #BA68C8; }
+.chip-insti.dealer { color: #FFB74D; }
+
+/* 法人 20 日成本均價 Badge */
+.badge-cost {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+.badge-cost.profit {
+  background: rgba(255, 107, 91, 0.14);
+  color: var(--pos);
+  border: 1px solid rgba(255, 107, 91, 0.25);
+}
+.badge-cost.loss {
+  background: rgba(78, 203, 113, 0.14);
+  color: var(--neg);
+  border: 1px solid rgba(78, 203, 113, 0.25);
+}
+
+/* 外資 / 投信連買連賣 Badge */
+.badge-streak {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+.badge-streak.buy {
+  background: rgba(255, 107, 91, 0.18);
+  color: var(--pos);
+  border: 1px solid rgba(255, 107, 91, 0.35);
+}
+.badge-streak.sell {
+  background: rgba(78, 203, 113, 0.18);
+  color: var(--neg);
+  border: 1px solid rgba(78, 203, 113, 0.35);
+}
+
+/* 籌碼雷達分頁導覽列 */
+.radar-nav-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  background: var(--s2);
+  border-bottom: 1px solid var(--s4);
+}
+
+.radar-nav-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--s3);
+  border: 1px solid var(--s5);
+  border-radius: 8px;
+  color: var(--s9);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.radar-nav-btn:hover {
+  color: var(--s12);
+  border-color: var(--s7);
+}
+
+.radar-nav-btn.active {
+  background: var(--s5);
+  color: var(--s13);
+  border-color: var(--c-gold);
+  box-shadow: 0 0 8px rgba(228, 177, 37, 0.2);
+}
+
 /* 數值高亮顏色 */
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

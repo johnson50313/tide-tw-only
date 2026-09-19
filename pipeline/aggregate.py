@@ -18,11 +18,23 @@ def to_stock_flows(insti_rows: list[dict], prices: dict[str, dict]) -> dict[str,
         price = prices.get(code)
         if price is None or price["close"] <= 0:
             continue
+        close = price["close"]
+        net_shares = row["net_shares"]
+        foreign_shares = row.get("foreign_shares", 0)
+        trust_shares = row.get("trust_shares", 0)
+        dealer_shares = row.get("dealer_shares", 0)
         out[code] = {
             "name": row["name"] or price["name"],
             "market": row["market"],
-            "net_yi": row["net_shares"] * price["close"] / YI,
-            "close": price["close"],
+            "net_yi": net_shares * close / YI,
+            "foreign_yi": foreign_shares * close / YI,
+            "trust_yi": trust_shares * close / YI,
+            "dealer_yi": dealer_shares * close / YI,
+            "net_shares": net_shares,
+            "foreign_shares": foreign_shares,
+            "trust_shares": trust_shares,
+            "dealer_shares": dealer_shares,
+            "close": close,
             "chg": price["chg"],
         }
     return out
@@ -35,6 +47,9 @@ def aggregate_sectors(sectors: dict[str, list[str]], flows: dict[str, dict]) -> 
         present = [c for c in codes if c in flows]
         result[name] = {
             "net_yi": sum(flows[c]["net_yi"] for c in present),
+            "foreign_yi": sum(flows[c].get("foreign_yi", 0) for c in present),
+            "trust_yi": sum(flows[c].get("trust_yi", 0) for c in present),
+            "dealer_yi": sum(flows[c].get("dealer_yi", 0) for c in present),
             "size": len(present),
             "stocks": present,
         }

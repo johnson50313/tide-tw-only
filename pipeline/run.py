@@ -17,7 +17,7 @@ from pipeline.extract import (
     extract_tpex_insti,
     extract_tpex_otc,
 )
-from pipeline.metrics import build_metrics
+from pipeline.metrics import build_metrics, compute_stock_metrics, build_radar
 from pipeline.sectors import load_sectors
 from pipeline.sources import fetch
 from pipeline.verify import reconcile
@@ -72,7 +72,14 @@ def build(end_date: str, days: int = 20) -> dict:
 
     collected.reverse()  # 由舊到新
     history = [{name: agg[name]["net_yi"] for name in agg} for _, agg, _ in collected]
-    metrics = build_metrics(history)
+    foreign_history = [{name: agg[name]["foreign_yi"] for name in agg} for _, agg, _ in collected]
+    trust_history = [{name: agg[name]["trust_yi"] for name in agg} for _, agg, _ in collected]
+    dealer_history = [{name: agg[name]["dealer_yi"] for name in agg} for _, agg, _ in collected]
+
+    metrics = build_metrics(history, foreign_history, trust_history, dealer_history)
+
+    history_flows = [flows for _, _, flows in collected]
+    stock_metrics = compute_stock_metrics(history_flows)
 
     latest_date, latest_agg, latest_flows = collected[-1]
     payloads = load_day(latest_date)
@@ -81,6 +88,8 @@ def build(end_date: str, days: int = 20) -> dict:
         raise RuntimeError(
             f"對帳未通過：誤差率 {recon['error_ratio']:.4%}，超過容差。不產出資料。"
         )
+
+    radar = build_radar(latest_flows, stock_metrics)
 
     out_sectors = []
     for row in metrics:
@@ -95,9 +104,19 @@ def build(end_date: str, days: int = 20) -> dict:
                         "code": code,
                         "name": latest_flows[code]["name"],
                         "market": latest_flows[code]["market"],
-                        "net_1d_yi": round(latest_flows[code]["net_yi"], 4),
                         "close": latest_flows[code]["close"],
                         "chg": latest_flows[code]["chg"],
+                        "net_1d_yi": round(latest_flows[code]["net_yi"], 4),
+                        "foreign_1d_yi": round(latest_flows[code].get("foreign_yi", 0.0), 4),
+                        "trust_1d_yi": round(latest_flows[code].get("trust_yi", 0.0), 4),
+                        "dealer_1d_yi": round(latest_flows[code].get("dealer_yi", 0.0), 4),
+                        "net_5d_yi": stock_metrics.get(code, {}).get("net_5d_yi", 0.0),
+                        "foreign_5d_yi": stock_metrics.get(code, {}).get("foreign_5d_yi", 0.0),
+                        "trust_5d_yi": stock_metrics.get(code, {}).get("trust_5d_yi", 0.0),
+                        "cost_20d": stock_metrics.get(code, {}).get("cost_20d"),
+                        "diff_pct": stock_metrics.get(code, {}).get("diff_pct"),
+                        "foreign_streak": stock_metrics.get(code, {}).get("foreign_streak", 0),
+                        "trust_streak": stock_metrics.get(code, {}).get("trust_streak", 0),
                     }
                     for code in sorted(
                         members, key=lambda c: latest_flows[c]["net_yi"], reverse=True
@@ -114,6 +133,7 @@ def build(end_date: str, days: int = 20) -> dict:
             "error_ratio": recon["error_ratio"],
             "passed": recon["passed"],
         },
+        "radar": radar,
         "sectors": sorted(out_sectors, key=lambda s: s["net_5d_yi"], reverse=True),
     }
 

@@ -4,6 +4,7 @@
   var state = {
     data: null,
     currentView: 'chart',
+    currentRankTab: 'sectors',
     activeQuadrant: '',
     searchQuery: '',
     rankSort: 'net_5d_yi',
@@ -218,53 +219,148 @@
 
   function renderRanking() {
     if (!state.data) return;
-    var key = state.rankSort;
-    var rows = state.data.sectors.slice();
 
-    if (state.activeQuadrant) {
-      rows = rows.filter(function (s) { return s.quadrant === state.activeQuadrant; });
+    var radarNavTabs = $('radar-nav-tabs');
+    var rankSortTabs = $('rank-sort-tabs');
+    var rankTitle = $('rank-title');
+    var tab = state.currentRankTab || 'sectors';
+
+    if (tab === 'sectors') {
+      if (rankSortTabs) rankSortTabs.style.display = 'flex';
+      if (rankTitle) rankTitle.textContent = '板塊資金流排行榜';
+
+      var key = state.rankSort;
+      var rows = state.data.sectors.slice();
+
+      if (state.activeQuadrant) {
+        rows = rows.filter(function (s) { return s.quadrant === state.activeQuadrant; });
+      }
+
+      rows.sort(function (a, b) { return b[key] - a[key]; });
+
+      var html = '<table class="rank-table"><thead><tr>'
+        + '<th style="width:48px;">#</th>'
+        + '<th>板塊名稱</th>'
+        + '<th class="num">檔數</th>'
+        + '<th class="num">當日淨買 (億)</th>'
+        + '<th class="num">近 5 日淨買 (億)</th>'
+        + '<th class="num">外資 5 日</th>'
+        + '<th class="num">投信 5 日</th>'
+        + '<th class="num">自營 5 日</th>'
+        + '<th class="num">買超加速度</th>'
+        + '<th>狀態</th>'
+        + '</tr></thead><tbody>';
+
+      rows.forEach(function (s, i) {
+        var medalHtml = (i === 0) ? '<span class="medal-badge medal-1">1</span>'
+          : (i === 1) ? '<span class="medal-badge medal-2">2</span>'
+          : (i === 2) ? '<span class="medal-badge medal-3">3</span>'
+          : '<span style="color:var(--s8);">' + (i + 1) + '</span>';
+
+        html += '<tr data-name="' + s.name + '">'
+          + '<td>' + medalHtml + '</td>'
+          + '<td style="font-weight:700;">' + s.name + '</td>'
+          + '<td class="num" style="color:var(--s9);">' + s.size + '</td>'
+          + '<td class="num ' + (s.net_1d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(s.net_1d_yi) + '</td>'
+          + '<td class="num ' + (s.net_5d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(s.net_5d_yi) + '</td>'
+          + '<td class="num ' + (s.foreign_5d_yi >= 0 ? 'pos' : 'neg') + '" style="font-size:12px;">' + signed(s.foreign_5d_yi, 1) + '</td>'
+          + '<td class="num ' + (s.trust_5d_yi >= 0 ? 'pos' : 'neg') + '" style="font-size:12px;">' + signed(s.trust_5d_yi, 1) + '</td>'
+          + '<td class="num ' + (s.dealer_5d_yi >= 0 ? 'pos' : 'neg') + '" style="font-size:12px;">' + signed(s.dealer_5d_yi, 1) + '</td>'
+          + '<td class="num ' + (s.accel >= 0 ? 'pos' : 'neg') + '">' + signed(s.accel) + '</td>'
+          + '<td><span class="q-filter-btn active" data-q="' + s.quadrant + '" style="padding:1px 8px; font-size:11px;">'
+          + window.TideChart.QUADRANT_LABEL[s.quadrant] + '</span></td>'
+          + '</tr>';
+      });
+
+      html += '</tbody></table>';
+      $('ranking-mount').innerHTML = html;
+
+      Array.prototype.forEach.call($('ranking-mount').querySelectorAll('tr[data-name]'), function (tr) {
+        tr.addEventListener('click', function () {
+          var name = tr.getAttribute('data-name');
+          var found = state.data.sectors.filter(function (s) { return s.name === name; })[0];
+          if (found) openDrawer(found);
+        });
+      });
+      return;
     }
 
-    rows.sort(function (a, b) { return b[key] - a[key]; });
+    // 籌碼雷達榜單
+    if (rankSortTabs) rankSortTabs.style.display = 'none';
 
-    var html = '<table class="rank-table"><thead><tr>'
+    var radar = state.data.radar || {};
+    var radarData = radar[tab] || [];
+
+    var tabTitles = {
+      co_buy: '🎯 土洋同買榜（外資＋投信同步大額加碼）',
+      co_sell: '❄️ 土洋同賣榜（外資＋投信同步撤退提款）',
+      divergence: '⚡ 土洋對作榜（外資與投信多空分歧激烈）',
+      foreign_streak_top: '🔥 外資連買榜（外資連續買超天數排行）',
+      trust_streak_top: '💎 投信連買榜（投信認養連續買超排行）'
+    };
+
+    if (rankTitle) rankTitle.textContent = tabTitles[tab] || '籌碼雷達排行榜';
+
+    if (!radarData.length) {
+      $('ranking-mount').innerHTML = '<div style="padding:40px; text-align:center; color:var(--s8);">今日無符合條件之標的</div>';
+      return;
+    }
+
+    var rHtml = '<table class="rank-table"><thead><tr>'
       + '<th style="width:48px;">#</th>'
-      + '<th>板塊名稱</th>'
-      + '<th class="num">檔數</th>'
-      + '<th class="num">當日淨買 (億)</th>'
-      + '<th class="num">近 5 日淨買 (億)</th>'
-      + '<th class="num">近 20 日淨買 (億)</th>'
-      + '<th class="num">買超加速度</th>'
-      + '<th>狀態</th>'
+      + '<th>代號 / 名稱</th>'
+      + '<th class="num">收盤價</th>'
+      + '<th class="num">漲跌</th>'
+      + '<th class="num">三大法人合計 (億)</th>'
+      + '<th class="num" style="color:#64B5F6;">外資買賣 (億)</th>'
+      + '<th class="num" style="color:#BA68C8;">投信買賣 (億)</th>'
+      + '<th>法人20日成本 (乖離%)</th>'
+      + '<th>主力連買狀態</th>'
       + '</tr></thead><tbody>';
 
-    rows.forEach(function (s, i) {
+    radarData.forEach(function (st, i) {
       var medalHtml = (i === 0) ? '<span class="medal-badge medal-1">1</span>'
         : (i === 1) ? '<span class="medal-badge medal-2">2</span>'
         : (i === 2) ? '<span class="medal-badge medal-3">3</span>'
         : '<span style="color:var(--s8);">' + (i + 1) + '</span>';
 
-      html += '<tr data-name="' + s.name + '">'
+      var costBadge = st.cost_20d ? (
+        '<span class="badge-cost ' + (st.diff_pct >= 0 ? 'profit' : 'loss') + '">'
+        + st.cost_20d.toFixed(1) + ' (' + signed(st.diff_pct, 1) + '%)</span>'
+      ) : '<span style="color:var(--s7); font-size:11px;">--</span>';
+
+      var streakBadges = '';
+      if (st.foreign_streak >= 3) {
+        streakBadges += '<span class="badge-streak buy">🔥 外資 ' + st.foreign_streak + ' 連買</span> ';
+      } else if (st.foreign_streak <= -3) {
+        streakBadges += '<span class="badge-streak sell">❄️ 外資 ' + Math.abs(st.foreign_streak) + ' 連賣</span> ';
+      }
+
+      if (st.trust_streak >= 3) {
+        streakBadges += '<span class="badge-streak buy" style="background:rgba(186,104,200,0.18); color:#CE93D8; border-color:rgba(186,104,200,0.35);">💎 投信 ' + st.trust_streak + ' 連買</span>';
+      }
+
+      if (!streakBadges) streakBadges = '<span style="color:var(--s7); font-size:11px;">--</span>';
+
+      rHtml += '<tr data-code="' + st.code + '">'
         + '<td>' + medalHtml + '</td>'
-        + '<td style="font-weight:700;">' + s.name + '</td>'
-        + '<td class="num" style="color:var(--s9);">' + s.size + '</td>'
-        + '<td class="num ' + (s.net_1d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(s.net_1d_yi) + '</td>'
-        + '<td class="num ' + (s.net_5d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(s.net_5d_yi) + '</td>'
-        + '<td class="num ' + (s.net_20d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(s.net_20d_yi) + '</td>'
-        + '<td class="num ' + (s.accel >= 0 ? 'pos' : 'neg') + '">' + signed(s.accel) + '</td>'
-        + '<td><span class="q-filter-btn active" data-q="' + s.quadrant + '" style="padding:1px 8px; font-size:11px;">'
-        + window.TideChart.QUADRANT_LABEL[s.quadrant] + '</span></td>'
+        + '<td><span class="mono" style="font-weight:700; color:var(--c-gold); margin-right:6px;">' + st.code + '</span><span style="font-weight:600;">' + st.name + '</span></td>'
+        + '<td class="num" style="font-weight:700;">' + st.close.toFixed(2) + '</td>'
+        + '<td class="num ' + (st.chg >= 0 ? 'pos' : 'neg') + '">' + signed(st.chg) + '</td>'
+        + '<td class="num ' + (st.net_1d_yi >= 0 ? 'pos' : 'neg') + '" style="font-weight:700;">' + signed(st.net_1d_yi, 2) + '</td>'
+        + '<td class="num ' + (st.foreign_1d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(st.foreign_1d_yi, 2) + '</td>'
+        + '<td class="num ' + (st.trust_1d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(st.trust_1d_yi, 2) + '</td>'
+        + '<td>' + costBadge + '</td>'
+        + '<td>' + streakBadges + '</td>'
         + '</tr>';
     });
 
-    html += '</tbody></table>';
-    $('ranking-mount').innerHTML = html;
+    rHtml += '</tbody></table>';
+    $('ranking-mount').innerHTML = rHtml;
 
-    Array.prototype.forEach.call($('ranking-mount').querySelectorAll('tr[data-name]'), function (tr) {
+    Array.prototype.forEach.call($('ranking-mount').querySelectorAll('tr[data-code]'), function (tr) {
       tr.addEventListener('click', function () {
-        var name = tr.getAttribute('data-name');
-        var found = state.data.sectors.filter(function (s) { return s.name === name; })[0];
-        if (found) openDrawer(found);
+        focusStockSearch(tr.getAttribute('data-code'));
       });
     });
   }
@@ -290,6 +386,25 @@
     var dm20d = $('dm-20d');
     dm20d.textContent = signed(sector.net_20d_yi, 2) + ' 億';
     dm20d.className = 'val ' + (sector.net_20d_yi >= 0 ? 'pos' : 'neg');
+
+    // 法人三大分項
+    var dmForeign = $('dm-foreign');
+    if (dmForeign) {
+      dmForeign.textContent = signed(sector.foreign_5d_yi, 2) + ' 億';
+      dmForeign.className = 'val ' + (sector.foreign_5d_yi >= 0 ? 'pos' : 'neg');
+    }
+
+    var dmTrust = $('dm-trust');
+    if (dmTrust) {
+      dmTrust.textContent = signed(sector.trust_5d_yi, 2) + ' 億';
+      dmTrust.className = 'val ' + (sector.trust_5d_yi >= 0 ? 'pos' : 'neg');
+    }
+
+    var dmDealer = $('dm-dealer');
+    if (dmDealer) {
+      dmDealer.textContent = signed(sector.dealer_5d_yi, 2) + ' 億';
+      dmDealer.className = 'val ' + (sector.dealer_5d_yi >= 0 ? 'pos' : 'neg');
+    }
 
     updateDrawerFavBtn();
     renderDrawerStocks(sector);
@@ -323,22 +438,56 @@
 
     var html = '<table class="stocks-table"><thead><tr>'
       + '<th style="width:28px;">⭐</th>'
-      + '<th>代號</th>'
-      + '<th>名稱</th>'
-      + '<th class="num">收盤</th>'
-      + '<th class="num">漲跌</th>'
+      + '<th>代號 / 名稱</th>'
+      + '<th class="num">收盤價</th>'
       + '<th class="num">法人買超 (億)</th>'
+      + '<th>20日成本 (乖離%)</th>'
       + '</tr></thead><tbody>';
 
     stocks.forEach(function (st) {
       var fav = isStockFav(st.code);
+
+      var costBadge = st.cost_20d ? (
+        '<span class="badge-cost ' + (st.diff_pct >= 0 ? 'profit' : 'loss') + '" title="20日法人買進加權均價 ' + st.cost_20d + '">'
+        + st.cost_20d.toFixed(1) + ' (' + signed(st.diff_pct, 1) + '%)</span>'
+      ) : '<span style="color:var(--s7); font-size:11px;">--</span>';
+
+      var streakBadges = '';
+      if (st.foreign_streak >= 3) {
+        streakBadges += '<span class="badge-streak buy">🔥 外資 ' + st.foreign_streak + ' 連買</span> ';
+      } else if (st.foreign_streak <= -3) {
+        streakBadges += '<span class="badge-streak sell">❄️ 外資 ' + Math.abs(st.foreign_streak) + ' 連賣</span> ';
+      }
+
+      if (st.trust_streak >= 3) {
+        streakBadges += '<span class="badge-streak buy" style="background:rgba(186,104,200,0.18); color:#CE93D8; border-color:rgba(186,104,200,0.35);">💎 投信 ' + st.trust_streak + ' 連買</span>';
+      }
+
+      var instiChips = '<div class="insti-chips">'
+        + '<span class="chip-insti foreign">外 ' + signed(st.foreign_1d_yi, 2) + '</span>'
+        + '<span class="chip-insti trust">投 ' + signed(st.trust_1d_yi, 2) + '</span>'
+        + '<span class="chip-insti dealer">自 ' + signed(st.dealer_1d_yi, 2) + '</span>'
+        + '</div>';
+
       html += '<tr>'
         + '<td><button class="fav-star-btn ' + (fav ? 'active' : '') + '" data-stk-code="' + st.code + '" data-stk-name="' + st.name + '" data-stk-mkt="' + st.market + '">' + (fav ? '★' : '☆') + '</button></td>'
-        + '<td class="mono" style="font-weight:700; color:var(--c-gold);">' + st.code + '</td>'
-        + '<td style="font-weight:600;">' + st.name + '</td>'
-        + '<td class="num">' + st.close.toFixed(2) + '</td>'
-        + '<td class="num ' + (st.chg >= 0 ? 'pos' : 'neg') + '">' + signed(st.chg) + '</td>'
-        + '<td class="num ' + (st.net_1d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(st.net_1d_yi, 4) + '</td>'
+        + '<td>'
+        + '  <div style="display:flex; align-items:center; gap:6px;">'
+        + '    <span class="mono" style="font-weight:700; color:var(--c-gold);">' + st.code + '</span>'
+        + '    <span style="font-weight:600;">' + st.name + '</span>'
+        + (streakBadges ? '<span style="margin-left:4px;">' + streakBadges + '</span>' : '')
+        + '  </div>'
+        + instiChips
+        + '</td>'
+        + '<td class="num">'
+        + '  <div style="font-weight:700;">' + st.close.toFixed(2) + '</div>'
+        + '  <div class="' + (st.chg >= 0 ? 'pos' : 'neg') + '" style="font-size:11px;">' + signed(st.chg) + '</div>'
+        + '</td>'
+        + '<td class="num">'
+        + '  <div style="font-weight:700;" class="' + (st.net_1d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(st.net_1d_yi, 2) + ' 億</div>'
+        + '  <div style="font-size:11px; color:var(--s9);">5日 ' + signed(st.net_5d_yi, 1) + ' 億</div>'
+        + '</td>'
+        + '<td>' + costBadge + '</td>'
         + '</tr>';
     });
 
@@ -648,6 +797,21 @@
       $('ranking-view').classList.add('active');
       renderRanking();
     });
+
+    // 籌碼雷達榜單切換
+    var radarNavTabs = $('radar-nav-tabs');
+    if (radarNavTabs) {
+      Array.prototype.forEach.call(radarNavTabs.querySelectorAll('.radar-nav-btn'), function (btn) {
+        btn.addEventListener('click', function () {
+          Array.prototype.forEach.call(radarNavTabs.querySelectorAll('.radar-nav-btn'), function (b) {
+            b.classList.remove('active');
+          });
+          btn.classList.add('active');
+          state.currentRankTab = btn.getAttribute('data-tab');
+          renderRanking();
+        });
+      });
+    }
 
     // 排行榜排序切換
     Array.prototype.forEach.call($('rank-sort-tabs').querySelectorAll('.view-btn'), function (btn) {
