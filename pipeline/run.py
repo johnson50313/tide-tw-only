@@ -149,9 +149,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Tide 自製版資料管線")
     parser.add_argument("--date", default=dt.date.today().isoformat(), help="結束日 YYYY-MM-DD")
     parser.add_argument("--days", type=int, default=20, help="回補交易日數")
+    parser.add_argument("--mode", default="incremental", help="執行模式（incremental 或 full）")
     args = parser.parse_args()
 
-    print(f"回補至 {args.date}，目標 {args.days} 個交易日")
+    print(f"回補至 {args.date}，目標 {args.days} 個交易日（模式：{args.mode}）")
     result = build(args.date, args.days)
     print(f"完成：{result['date']}，{len(result['sectors'])} 個板塊")
     print(f"對帳誤差率 {result['reconciliation']['error_ratio']:.4%}")
