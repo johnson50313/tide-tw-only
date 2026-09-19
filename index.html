@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, viewport-fit=cover">
+<title>Tide 潮汐｜台股板塊輪動・法人資金流向</title>
+<link rel="stylesheet" href="web/style.css">
+<script>
+// 首屏前套用主題，避免閃爍
+(function () {
+  try {
+    var mode = localStorage.getItem('theme_mode') || 'dark';
+    document.documentElement.dataset.theme = mode;
+  } catch (e) {
+    document.documentElement.dataset.theme = 'dark';
+  }
+}());
+</script>
+</head>
+<body>
+<div class="app-container">
+
+  <!-- 頂部導航列 -->
+  <header class="top-header">
+    <div class="brand-section" id="brand-home">
+      <div class="brand-logo">T</div>
+      <div>
+        <span class="brand-title">Tide 潮汐</span>
+        <span class="date-badge" id="data-date">載入中…</span>
+      </div>
+    </div>
+
+    <!-- 搜尋與象限過濾 -->
+    <div class="header-center">
+      <div class="search-wrapper" id="search-wrapper">
+        <span class="search-icon-left">🔍</span>
+        <input type="text" class="search-input" id="search-input" placeholder="搜尋板塊或股票代號/名稱..." autocomplete="off">
+        <button class="search-clear-btn" id="search-clear" type="button" aria-label="清除搜尋">✕</button>
+        <div class="search-dropdown" id="search-dropdown"></div>
+      </div>
+
+      <div class="quadrant-filters" id="quadrant-filters">
+        <button class="compact-chip" id="compact-toggle" type="button" title="切換熱門前 15 大板塊或全部 76 板塊">
+          <span>🔥</span> <span id="compact-toggle-label">只看熱門 15</span>
+        </button>
+        <button class="q-filter-btn active" data-q="" type="button">
+          <span class="label">全部</span> <span class="count" id="count-all">76</span>
+        </button>
+        <button class="q-filter-btn" data-q="surge" type="button">
+          <span class="dot"></span> <span class="label">漲潮</span> <span class="count" id="count-surge">0</span>
+        </button>
+        <button class="q-filter-btn" data-q="rotation" type="button">
+          <span class="dot"></span> <span class="label">輪動</span> <span class="count" id="count-rotation">0</span>
+        </button>
+        <button class="q-filter-btn" data-q="watch" type="button">
+          <span class="dot"></span> <span class="label">觀察</span> <span class="count" id="count-watch">0</span>
+        </button>
+        <button class="q-filter-btn" data-q="ebb" type="button">
+          <span class="dot"></span> <span class="label">退潮</span> <span class="count" id="count-ebb">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 視圖與主題切換 -->
+    <div class="header-right">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-view-chart" type="button" title="四象限泡泡圖">
+          <span>🌐</span> 泡泡圖
+        </button>
+        <button class="view-btn" id="btn-view-rank" type="button" title="板塊資金排行榜">
+          <span>📊</span> 排行榜
+        </button>
+      </div>
+      <button class="icon-btn" id="theme-toggle" type="button" title="切換深淺色主題" aria-label="切換主題">◐</button>
+    </div>
+  </header>
+
+  <!-- 主內容分欄 -->
+  <div class="main-body">
+
+    <!-- 左側側欄：市場總覽與自選清單 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">
+          <span>大盤資金概況</span>
+          <span class="date-badge" id="sidebar-recon-badge">對帳良好</span>
+        </div>
+        <div class="market-stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">法人買賣超</div>
+            <div class="stat-value" id="stat-total-flow">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">交易日數</div>
+            <div class="stat-value" id="stat-trading-days">--</div>
+          </div>
+        </div>
+        <div class="quadrant-bar-wrap">
+          <div class="stat-label" style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span>四象限板塊分佈</span>
+            <span id="stat-quad-ratio">--</span>
+          </div>
+          <div class="quadrant-bar" id="quadrant-bar">
+            <div class="quadrant-bar-segment surge" style="width: 25%"></div>
+            <div class="quadrant-bar-segment rotation" style="width: 25%"></div>
+            <div class="quadrant-bar-segment watch" style="width: 25%"></div>
+            <div class="quadrant-bar-segment ebb" style="width: 25%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 自選清單 -->
+      <div class="watchlist-wrap">
+        <div class="sidebar-section" style="border-bottom:none; padding-bottom:4px;">
+          <div class="sidebar-title">
+            <span>自選清單 (Watchlist)</span>
+            <span class="count" id="watchlist-count" style="font-size:11px; background:var(--s4); padding:1px 6px; border-radius:8px;">0</span>
+          </div>
+        </div>
+        <div class="watchlist-list" id="watchlist-items">
+          <div class="watchlist-empty">尚無自選項目<br>點選成分股或板塊詳情中的 ⭐ 即可加入收藏。</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中央工作區 -->
+    <main class="main-stage">
+      <!-- 泡泡圖視圖 -->
+      <div class="chart-container" id="chart-view">
+        <div class="pan-hint">滾輪縮放・拖曳平移・點擊展開成分股</div>
+        <div id="chart-mount" style="width:100%; height:100%;"></div>
+
+        <!-- 重疊板塊彈出選單 (Overlap Disambiguation Popover) -->
+        <div class="overlap-menu" id="overlap-menu" style="display:none;"></div>
+
+        <!-- 畫布懸浮控制鈕 -->
+        <div class="chart-controls">
+          <button class="zoom-btn" id="btn-zoom-in" type="button" title="放大">+</button>
+          <button class="zoom-btn" id="btn-zoom-out" type="button" title="縮小">−</button>
+          <button class="zoom-btn" id="btn-zoom-reset" type="button" title="重置視圖" style="font-size:11px;">100%</button>
+        </div>
+      </div>
+
+      <!-- 排行榜視圖 -->
+      <div class="ranking-container" id="ranking-view">
+        <div class="ranking-table-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--s4);">
+            <div style="font-size:15px; font-weight:700;">板塊資金流排行榜</div>
+            <div class="view-toggle" id="rank-sort-tabs">
+              <button class="view-btn active" data-sort="net_5d_yi" type="button">近 5 日</button>
+              <button class="view-btn" data-sort="net_1d_yi" type="button">當日</button>
+              <button class="view-btn" data-sort="net_20d_yi" type="button">近 20 日</button>
+              <button class="view-btn" data-sort="accel" type="button">加速度</button>
+            </div>
+          </div>
+          <div id="ranking-mount"></div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- 懸浮氣泡 Tooltip Popover -->
+  <div class="bubble-tooltip" id="bubble-tooltip"></div>
+
+  <!-- 右側滑入式成分股抽屜 (Slide-over Drawer) -->
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="detail-drawer" id="detail-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title-wrap">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <h2 class="drawer-title" id="drawer-sector-name">板塊名稱</h2>
+          <span class="date-badge" id="drawer-quadrant-badge">漲潮</span>
+        </div>
+        <div style="font-size:12px; color:var(--s9);" id="drawer-sector-summary">7 檔成分股・近 5 日買超 +12.3 億</div>
+      </div>
+      <div class="drawer-header-actions">
+        <button class="fav-star-btn" id="drawer-fav-btn" type="button" title="收藏板塊">★</button>
+        <button class="icon-btn" id="drawer-close-btn" type="button" title="關閉 (Esc)">✕</button>
+      </div>
+    </div>
+
+    <!-- 板塊核心指標 -->
+    <div class="drawer-metrics-grid">
+      <div class="drawer-metric">
+        <span class="label">近 5 日買超</span>
+        <span class="val" id="dm-5d">--</span>
+      </div>
+      <div class="drawer-metric">
+        <span class="label">買超加速度</span>
+        <span class="val" id="dm-accel">--</span>
+      </div>
+      <div class="drawer-metric">
+        <span class="label">近 20 日買超</span>
+        <span class="val" id="dm-20d">--</span>
+      </div>
+    </div>
+
+    <!-- 成分股清單 -->
+    <div class="drawer-body">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-size:12px; font-weight:700; color:var(--s9);">成分股明細</span>
+        <input type="text" id="drawer-stock-search" placeholder="篩選成分股..." style="background:var(--s3); border:1px solid var(--s5); border-radius:6px; color:var(--s13); font-size:12px; padding:3px 8px; width:120px; outline:none;">
+      </div>
+      <div id="drawer-stocks-mount"></div>
+    </div>
+  </aside>
+
+</div>
+
+<script src="web/chart.js"></script>
+<script src="web/app.js"></script>
+</body>
+</html>
