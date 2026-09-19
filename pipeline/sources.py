@@ -61,9 +61,27 @@ def fetch(kind: str, date_iso: str, use_cache: bool = True) -> dict | None:
     if use_cache and cache.exists():
         payload = json.loads(cache.read_text(encoding="utf-8"))
     else:
-        resp = requests.get(build_url(kind, date_iso), headers=HEADERS, timeout=40)
-        resp.raise_for_status()
-        payload = resp.json()
+        url = build_url(kind, date_iso)
+        last_err = None
+        payload = None
+        for attempt in range(3):
+            try:
+                resp = requests.get(url, headers=HEADERS, timeout=30)
+                if resp.status_code == 200:
+                    payload = resp.json()
+                    break
+                elif resp.status_code == 429:
+                    time.sleep(5 * (attempt + 1))
+                else:
+                    resp.raise_for_status()
+            except Exception as e:
+                last_err = e
+                time.sleep(2 * (attempt + 1))
+        if payload is None:
+            if last_err:
+                raise last_err
+            return None
+
         cache.parent.mkdir(parents=True, exist_ok=True)
         cache.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
         time.sleep(REQUEST_GAP)
