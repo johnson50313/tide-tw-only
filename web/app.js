@@ -436,13 +436,12 @@
       });
     }
 
-    var html = '<table class="stocks-table"><thead><tr>'
-      + '<th style="width:28px;">⭐</th>'
-      + '<th>代號 / 名稱</th>'
-      + '<th class="num">收盤價</th>'
-      + '<th class="num">法人買超 (億)</th>'
-      + '<th>20日成本 (乖離%)</th>'
-      + '</tr></thead><tbody>';
+    if (!stocks.length) {
+      $('drawer-stocks-mount').innerHTML = '<div style="padding:32px 16px; text-align:center; color:var(--s8); font-size:13px;">無符合條件之成分股</div>';
+      return;
+    }
+
+    var html = '<div class="stocks-card-list">';
 
     stocks.forEach(function (st) {
       var fav = isStockFav(st.code);
@@ -450,54 +449,70 @@
       var costBadge = st.cost_20d ? (
         '<span class="badge-cost ' + (st.diff_pct >= 0 ? 'profit' : 'loss') + '" title="20日法人買進加權均價 ' + st.cost_20d + '">'
         + st.cost_20d.toFixed(1) + ' (' + signed(st.diff_pct, 1) + '%)</span>'
-      ) : '<span style="color:var(--s7); font-size:11px;">--</span>';
+      ) : '<span style="color:var(--s7); font-size:11px;">成本 --</span>';
 
       var streakBadges = '';
       if (st.foreign_streak >= 3) {
-        streakBadges += '<span class="badge-streak buy">🔥 外資 ' + st.foreign_streak + ' 連買</span> ';
+        streakBadges += '<span class="badge-streak buy">🔥 外資 ' + st.foreign_streak + ' 連買</span>';
       } else if (st.foreign_streak <= -3) {
-        streakBadges += '<span class="badge-streak sell">❄️ 外資 ' + Math.abs(st.foreign_streak) + ' 連賣</span> ';
+        streakBadges += '<span class="badge-streak sell">❄️ 外資 ' + Math.abs(st.foreign_streak) + ' 連賣</span>';
       }
 
       if (st.trust_streak >= 3) {
-        streakBadges += '<span class="badge-streak buy" style="background:rgba(186,104,200,0.18); color:#CE93D8; border-color:rgba(186,104,200,0.35);">💎 投信 ' + st.trust_streak + ' 連買</span>';
+        streakBadges += (streakBadges ? ' ' : '') + '<span class="badge-streak buy" style="background:rgba(186,104,200,0.18); color:#CE93D8; border-color:rgba(186,104,200,0.35);">💎 投信 ' + st.trust_streak + ' 連買</span>';
       }
 
-      var instiChips = '<div class="insti-chips">'
-        + '<span class="chip-insti foreign">外 ' + signed(st.foreign_1d_yi, 2) + '</span>'
-        + '<span class="chip-insti trust">投 ' + signed(st.trust_1d_yi, 2) + '</span>'
-        + '<span class="chip-insti dealer">自 ' + signed(st.dealer_1d_yi, 2) + '</span>'
-        + '</div>';
-
-      html += '<tr>'
-        + '<td><button class="fav-star-btn ' + (fav ? 'active' : '') + '" data-stk-code="' + st.code + '" data-stk-name="' + st.name + '" data-stk-mkt="' + st.market + '">' + (fav ? '★' : '☆') + '</button></td>'
-        + '<td>'
-        + '  <div style="display:flex; align-items:center; gap:6px;">'
-        + '    <span class="mono" style="font-weight:700; color:var(--c-gold);">' + st.code + '</span>'
-        + '    <span style="font-weight:600;">' + st.name + '</span>'
-        + (streakBadges ? '<span style="margin-left:4px;">' + streakBadges + '</span>' : '')
+      html += '<div class="stock-card" data-code="' + st.code + '">'
+        + '  <div class="stock-card-top">'
+        + '    <div class="stock-card-identity">'
+        + '      <button class="fav-star-btn ' + (fav ? 'active' : '') + '" data-stk-code="' + st.code + '" data-stk-name="' + st.name + '" data-stk-mkt="' + st.market + '" title="收藏">' + (fav ? '★' : '☆') + '</button>'
+        + '      <span class="stock-code mono">' + st.code + '</span>'
+        + '      <span class="stock-name">' + st.name + '</span>'
+        + (streakBadges ? '      ' + streakBadges : '')
+        + '    </div>'
+        + '    <div class="stock-card-price-wrap">'
+        + '      ' + costBadge
+        + '      <div class="stock-price-block">'
+        + '        <span class="stock-price mono">' + st.close.toFixed(2) + '</span>'
+        + '        <span class="stock-chg ' + (st.chg >= 0 ? 'pos' : 'neg') + '">' + signed(st.chg) + '</span>'
+        + '      </div>'
+        + '    </div>'
         + '  </div>'
-        + instiChips
-        + '</td>'
-        + '<td class="num">'
-        + '  <div style="font-weight:700;">' + st.close.toFixed(2) + '</div>'
-        + '  <div class="' + (st.chg >= 0 ? 'pos' : 'neg') + '" style="font-size:11px;">' + signed(st.chg) + '</div>'
-        + '</td>'
-        + '<td class="num">'
-        + '  <div style="font-weight:700;" class="' + (st.net_1d_yi >= 0 ? 'pos' : 'neg') + '">' + signed(st.net_1d_yi, 2) + ' 億</div>'
-        + '  <div style="font-size:11px; color:var(--s9);">5日 ' + signed(st.net_5d_yi, 1) + ' 億</div>'
-        + '</td>'
-        + '<td>' + costBadge + '</td>'
-        + '</tr>';
+        + '  <div class="stock-card-bottom">'
+        + '    <div class="insti-chips">'
+        + '      <span class="chip-insti foreign"><span class="chip-tag">外</span>' + signed(st.foreign_1d_yi, 2) + '</span>'
+        + '      <span class="chip-insti trust"><span class="chip-tag">投</span>' + signed(st.trust_1d_yi, 2) + '</span>'
+        + '      <span class="chip-insti dealer"><span class="chip-tag">自</span>' + signed(st.dealer_1d_yi, 2) + '</span>'
+        + '    </div>'
+        + '    <div class="stock-flow-block">'
+        + '      <div class="flow-item">'
+        + '        <span class="flow-label">當日</span>'
+        + '        <span class="flow-val ' + (st.net_1d_yi >= 0 ? 'pos' : 'neg') + ' mono">' + signed(st.net_1d_yi, 2) + ' 億</span>'
+        + '      </div>'
+        + '      <div class="flow-item">'
+        + '        <span class="flow-label">5日</span>'
+        + '        <span class="flow-val ' + (st.net_5d_yi >= 0 ? 'pos' : 'neg') + ' mono">' + signed(st.net_5d_yi, 1) + ' 億</span>'
+        + '      </div>'
+        + '    </div>'
+        + '  </div>'
+        + '</div>';
     });
 
-    html += '</tbody></table>';
+    html += '</div>';
     $('drawer-stocks-mount').innerHTML = html;
 
     Array.prototype.forEach.call($('drawer-stocks-mount').querySelectorAll('.fav-star-btn'), function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         toggleStockFav(btn.getAttribute('data-stk-code'), btn.getAttribute('data-stk-name'), btn.getAttribute('data-stk-mkt'));
+      });
+    });
+
+    Array.prototype.forEach.call($('drawer-stocks-mount').querySelectorAll('.stock-card'), function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('.fav-star-btn')) return;
+        var code = card.getAttribute('data-code');
+        if (code) focusStockSearch(code);
       });
     });
   }

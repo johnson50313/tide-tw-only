@@ -190,42 +190,44 @@
       </div>
     </div>
 
-    <!-- 板塊核心指標 -->
-    <div class="drawer-metrics-grid">
-      <div class="drawer-metric">
-        <span class="label">近 5 日買超</span>
-        <span class="val" id="dm-5d">--</span>
+    <!-- 板塊核心指標與法人分項 -->
+    <div class="drawer-metrics-section">
+      <div class="drawer-metrics-grid">
+        <div class="drawer-metric">
+          <span class="label">近 5 日買超</span>
+          <span class="val" id="dm-5d">--</span>
+        </div>
+        <div class="drawer-metric">
+          <span class="label">買超加速度</span>
+          <span class="val" id="dm-accel">--</span>
+        </div>
+        <div class="drawer-metric">
+          <span class="label">近 20 日買超</span>
+          <span class="val" id="dm-20d">--</span>
+        </div>
       </div>
-      <div class="drawer-metric">
-        <span class="label">買超加速度</span>
-        <span class="val" id="dm-accel">--</span>
-      </div>
-      <div class="drawer-metric">
-        <span class="label">近 20 日買超</span>
-        <span class="val" id="dm-20d">--</span>
-      </div>
-    </div>
-    <!-- 法人分項指標 -->
-    <div class="drawer-metrics-grid" style="grid-template-columns: repeat(3, 1fr); background: var(--s2); border-bottom: 1px solid var(--s4); padding: 8px 16px;">
-      <div class="drawer-metric">
-        <span class="label" style="color:#64B5F6;">外資 5 日</span>
-        <span class="val" id="dm-foreign" style="font-size:13px;">--</span>
-      </div>
-      <div class="drawer-metric">
-        <span class="label" style="color:#BA68C8;">投信 5 日</span>
-        <span class="val" id="dm-trust" style="font-size:13px;">--</span>
-      </div>
-      <div class="drawer-metric">
-        <span class="label" style="color:#FFB74D;">自營 5 日</span>
-        <span class="val" id="dm-dealer" style="font-size:13px;">--</span>
+      <!-- 法人 5 日拆解 -->
+      <div class="drawer-insti-grid">
+        <div class="drawer-insti-card foreign">
+          <span class="label">外資 5 日</span>
+          <span class="val" id="dm-foreign">--</span>
+        </div>
+        <div class="drawer-insti-card trust">
+          <span class="label">投信 5 日</span>
+          <span class="val" id="dm-trust">--</span>
+        </div>
+        <div class="drawer-insti-card dealer">
+          <span class="label">自營 5 日</span>
+          <span class="val" id="dm-dealer">--</span>
+        </div>
       </div>
     </div>
 
     <!-- 成分股清單 -->
     <div class="drawer-body">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <span style="font-size:12px; font-weight:700; color:var(--s9);">成分股明細</span>
-        <input type="text" id="drawer-stock-search" placeholder="篩選成分股..." style="background:var(--s3); border:1px solid var(--s5); border-radius:6px; color:var(--s13); font-size:12px; padding:3px 8px; width:120px; outline:none;">
+        <input type="text" id="drawer-stock-search" placeholder="搜尋成分股..." style="background:var(--s3); border:1px solid var(--s5); border-radius:6px; color:var(--s13); font-size:12px; padding:4px 10px; width:140px; outline:none;">
       </div>
       <div id="drawer-stocks-mount"></div>
     </div>
