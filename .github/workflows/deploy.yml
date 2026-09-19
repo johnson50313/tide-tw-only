@@ -57,7 +57,8 @@ jobs:
           git add data/ reports/
           if ! git diff-index --quiet HEAD; then
             git commit -m "chore(data): auto-update institutional flow data [skip ci]"
-            git push
+            git pull --rebase origin main || true
+            git push || true
           else
             echo "No data changes to commit."
           fi
