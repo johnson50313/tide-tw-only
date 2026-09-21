@@ -2,8 +2,11 @@ name: Update Data & Deploy to GitHub Pages
 
 on:
   schedule:
-    # 台灣時間週一至週五 16:30 執行（UTC 08:30）
+    # 台灣時間週一至週五 16:30、17:00、17:30 執行（UTC 08:30, 09:00, 09:30）
+    # 多重排程確保避開 GitHub 隊列延遲，並在交易所結算發布後第一時間更新
     - cron: '30 8 * * 1-5'
+    - cron: '0 9 * * 1-5'
+    - cron: '30 9 * * 1-5'
   workflow_dispatch: # 支援在 GitHub 網頁上手動點擊執行
   push:
     branches:

@@ -195,9 +195,15 @@ def write_unmapped_report(sectors: dict, flows: dict, date_iso: str) -> None:
     print(f"  死代號報表：{path.name}（{len(lines)} 個板塊有缺漏）")
 
 
+def taiwan_today_iso() -> str:
+    """取得台灣時間 (UTC+8) 的今日日期字串 YYYY-MM-DD。"""
+    tz_tw = dt.timezone(dt.timedelta(hours=8))
+    return dt.datetime.now(tz_tw).date().isoformat()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Tide 自製版資料管線")
-    parser.add_argument("--date", default=dt.date.today().isoformat(), help="結束日 YYYY-MM-DD")
+    parser.add_argument("--date", default=taiwan_today_iso(), help="結束日 YYYY-MM-DD")
     parser.add_argument("--days", type=int, default=20, help="回補交易日數")
     parser.add_argument("--mode", default="incremental", help="執行模式（incremental 或 full）")
     args = parser.parse_args()
