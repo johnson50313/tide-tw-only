@@ -2,12 +2,14 @@ name: Update Data & Deploy to GitHub Pages
 
 on:
   schedule:
-    # 台灣時間週一至週五 16:30、17:00、17:30 執行（UTC 08:30, 09:00, 09:30）
-    # 多重排程確保避開 GitHub 隊列延遲，並在交易所結算發布後第一時間更新
-    - cron: '30 8 * * 1-5'
-    - cron: '0 9 * * 1-5'
-    - cron: '30 9 * * 1-5'
+    # 台灣時間週一至週五 16:38, 17:12, 17:47 執行（UTC 08:38, 09:12, 09:47）
+    # 使用非整點奇數分鐘，大幅避開 GitHub 內建排程器的尖峰排隊延遲
+    - cron: '38 8 * * 1-5'
+    - cron: '12 9 * * 1-5'
+    - cron: '47 9 * * 1-5'
   workflow_dispatch: # 支援在 GitHub 網頁上手動點擊執行
+  repository_dispatch: # 支援外部 Webhook (如 cron-job.org) 秒級精準觸發
+    types: [update-data, daily-trigger]
   push:
     branches:
       - main
