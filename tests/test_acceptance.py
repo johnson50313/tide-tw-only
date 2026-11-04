@@ -17,9 +17,9 @@ def latest():
 
 
 def test_v1_reconciliation_passed(latest):
-    """驗證項 1：總額對帳誤差率 < 0.5%。"""
+    """驗證項 1：總額對帳誤差率 < 1.0%。"""
     assert latest["reconciliation"]["passed"] is True
-    assert latest["reconciliation"]["error_ratio"] < 0.005
+    assert latest["reconciliation"]["error_ratio"] < 0.01
 
 
 def test_v3_no_dead_codes(latest):

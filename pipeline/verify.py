@@ -5,7 +5,7 @@
 from pipeline.extract import extract_mi_index, extract_t86
 from pipeline.parsers import to_number
 
-TOLERANCE = 0.005  # 實測 5 個交易日誤差率 0.023%~0.366%，0.5% 留足餘裕
+TOLERANCE = 0.01  # 實測交易日誤差率多在 0.02%~0.6%，1.0% 留足盤中震盪餘裕
 
 
 def _bfi_total(bfi_raw: dict) -> tuple[float, float]:

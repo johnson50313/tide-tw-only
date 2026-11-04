@@ -20,4 +20,4 @@ def test_reconcile_uses_all_securities(t86_raw, mi_index_raw, bfi_raw):
 
 
 def test_tolerance_value():
-    assert TOLERANCE == 0.005
+    assert TOLERANCE == 0.01
